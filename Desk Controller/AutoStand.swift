@@ -5,26 +5,51 @@
 //  Created by Johan Eklund on 2021-03-05.
 //
 
-import Foundation
+import AppKit
 import CoreGraphics
 
 extension Notification.Name {
     /// Posted whenever the auto-stand phase may have changed: at the end of
     /// every `AutoStand.update()` and after each timer block (sit↔stand fire).
     /// `object` is the new `AutoStand.Phase`.
-    /// Subscribers should not retain references to the `AutoStand` instance
-    /// because `DeskController` (and its `AutoStand`) is rebuilt on every
-    /// Bluetooth reconnect.
     static let autoStandPhaseChanged = Notification.Name("autoStandPhaseChanged")
 }
 
+/// The sit/stand schedule.
+///
+/// Deliberately a singleton that outlives any one Bluetooth connection. When it
+/// hung off `DeskController` — which is rebuilt on every reconnect — the whole
+/// cycle re-anchored to "now" each time the desk dropped and re-joined, so on a
+/// flaky link the stand reminder could never actually come due. It also meant
+/// reminders stopped entirely while the desk was unreachable, even in
+/// "notify instead of moving" mode where they don't need the desk at all.
 @MainActor
 class AutoStand: NSObject {
+
+    static let shared = AutoStand()
 
     enum Phase: Sendable { case disabled, sitting, standing }
 
     private var upTimer: Timer?
     private var downTimer: Timer?
+
+    private override init() {
+        super.init()
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(systemDidWake),
+            name: NSWorkspace.didWakeNotification,
+            object: nil
+        )
+    }
+
+    @objc private func systemDidWake() {
+        // Timers don't fire while the Mac is asleep and their fire dates drift
+        // past. Re-anchor the cycle from now rather than firing a backlog the
+        // moment the lid opens.
+        dbg("AutoStand: system woke, re-anchoring schedule")
+        update()
+    }
 
     /// When the next stand-up fire is scheduled, or `nil` if auto-stand is off.
     var nextUpDate: Date? { upTimer?.isValid == true ? upTimer?.fireDate : nil }
@@ -44,8 +69,12 @@ class AutoStand: NSObject {
             // on the first position notification anyway.
             return .sitting
         }
-        let sit = Preferences.shared.sittingPosition
-        let stand = Preferences.shared.standingPosition
+        // Presets are in calibrated coordinates; `position` is raw. Convert the
+        // presets to raw (subtract the calibration offset) before comparing —
+        // the same way `Preferences.forPosition` derives raw move targets.
+        let offset = Preferences.shared.positionOffset
+        let sit = Preferences.shared.sittingPosition - offset
+        let stand = Preferences.shared.standingPosition - offset
         let midpoint = (sit + stand) / 2
         return position < midpoint ? .sitting : .standing
     }
@@ -119,7 +148,7 @@ class AutoStand: NSObject {
                 // Phase advanced regardless of whether the move was issued —
                 // the timer's fireDate has moved on by `cycle`. (Phase is
                 // schedule-based, not desk-position-based. See plan.)
-                DeskController.shared?.autoStand.postPhaseChanged()
+                AutoStand.shared.postPhaseChanged()
             }
         })
         upTimer?.tolerance = 10
@@ -133,7 +162,7 @@ class AutoStand: NSObject {
                 } else {
                     DeskController.shared?.moveToPosition(.sit)
                 }
-                DeskController.shared?.autoStand.postPhaseChanged()
+                AutoStand.shared.postPhaseChanged()
             }
         })
         downTimer?.tolerance = 10

@@ -71,10 +71,20 @@ To open Preferences either right-click the status-bar icon and click `Preference
 Turn on the auto-stand schedule in Preferences to be reminded once per hour. If you'd rather decide for yourself when to move, toggle **Notify instead of moving automatically** — the app will then post a macOS notification at the scheduled time with `Stand` / `Sit` action buttons that move the desk when you tap them.
 
 
+## Connecting to your desk
+
+The first time the app runs it looks for a nearby desk — anything advertising the Linak desk-control service, or with "desk" in its Bluetooth name — and connects to the closest one. From then on it remembers that specific desk and reconnects to it directly, so later launches don't need to search at all, and renaming the desk doesn't matter.
+
+The connection keeps recovering on its own. If the desk drops Bluetooth while idle, goes out of range, or Bluetooth is turned off and back on, the app keeps retrying until it's back. Two extras live in the status-bar right-click menu:
+
+* **Reconnect** — try again immediately instead of waiting for the next retry.
+* **Forget This Desk** — stop reconnecting to the remembered desk and search again. Use this if the app latched onto the wrong desk (an open-plan office full of them) or you've replaced/reset yours.
+
+
 ## Troubleshooting
 
 * Make sure no other phones / computers currently have one of the 'Desk Control' apps open and connected to your desk. If they do, simply quit that app and this Desk Controller app should work.
-* The auto-discovery heuristic looks for the word "desk" (case-insensitive) in the Bluetooth device name. If you renamed your desk to something that doesn't contain "desk", use the **Choose Bluetooth Device…** picker instead.
+* If it connected to the wrong desk, use **Forget This Desk** from the status-bar right-click menu and move closer to yours before it searches again.
 * `"Desk Controller.app" is damaged and can't be opened` — that's macOS's quarantine flag on an unsigned/CI-built download. Run the `xattr -dr com.apple.quarantine ...` command from the "Getting started" section.
 * If it's still not finding your desk, try resetting the desk:
     1. Lower your desk as low as it goes.
@@ -148,6 +158,17 @@ open "Desk Controller.xcodeproj"
 ```
 
 Requires Xcode 16+ on an Apple Silicon Mac.
+
+Tests:
+
+```sh
+xcodebuild test -project "Desk Controller.xcodeproj" -scheme "Desk Controller" \
+  -destination 'platform=macOS,arch=arm64' \
+  CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" \
+  ENABLE_APP_SANDBOX=NO
+```
+
+`ENABLE_APP_SANDBOX=NO` applies to the test run only — the shipped app is still sandboxed. XCTest injects its bundle into the host app and talks back to `xcodebuild` over XPC, which the sandbox blocks; without the override the run hangs with *"the test runner hung before establishing connection"*.
 
 CLI build:
 

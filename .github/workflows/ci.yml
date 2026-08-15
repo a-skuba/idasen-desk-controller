@@ -25,6 +25,22 @@ jobs:
           xcodebuild -version
           swift --version
 
+      - name: Test
+        # ENABLE_APP_SANDBOX=NO applies to this test run only — the shipped app
+        # is still sandboxed. XCTest injects its bundle into the host app and
+        # talks back over XPC, which the sandbox blocks, so a sandboxed host
+        # hangs with "the test runner hung before establishing connection".
+        run: |
+          xcodebuild test \
+            -project "Desk Controller.xcodeproj" \
+            -scheme "Desk Controller" \
+            -destination 'platform=macOS,arch=arm64' \
+            -derivedDataPath build-test \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="" \
+            ENABLE_APP_SANDBOX=NO
+
       - name: Build
         run: |
           xcodebuild \
