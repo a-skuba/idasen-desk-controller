@@ -27,7 +27,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Cached current phase for icon refresh de-duping. Nil forces first draw.
     private var lastIconPhase: AutoStand.Phase?
 
+    /// Unit tests are injected into this app, so its launch work would otherwise
+    /// run during `xcodebuild test` too — claiming the desk over Bluetooth,
+    /// adding a status-bar item, and registering the test build's throwaway path
+    /// as a login item. XCTest sets this variable before the app starts, unlike
+    /// `NSClassFromString("XCTestCase")` which isn't loaded yet at this point.
+    private var isRunningTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        guard !isRunningTests else { return }
 
         statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         popover = NSPopover()
@@ -50,10 +60,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusBarMenu.addItem(withTitle: "Move to sit", action: #selector(moveToSit), keyEquivalent: "")
         statusBarMenu.addItem(withTitle: "Move to stand", action: #selector(moveToStand), keyEquivalent: "")
         statusBarMenu.addItem(.separator())
+        // Connection recovery, reachable without opening the popover — the app
+        // used to offer no way at all to ask it to try again.
+        statusBarMenu.addItem(withTitle: "Reconnect", action: #selector(reconnectDesk), keyEquivalent: "")
+        let forgetItem = statusBarMenu.addItem(withTitle: "Forget This Desk",
+                                               action: #selector(forgetDesk), keyEquivalent: "")
+        forgetItem.toolTip = "Stop reconnecting to the remembered desk and search for one again."
+        statusBarMenu.addItem(.separator())
         statusBarMenu.addItem(withTitle: "Preferences…", action: #selector(showPreferences), keyEquivalent: "")
         statusBarMenu.addItem(withTitle: "About Desk Controller", action: #selector(showAbout), keyEquivalent: "")
         statusBarMenu.addItem(.separator())
         statusBarMenu.addItem(withTitle: "Quit", action: #selector(quit), keyEquivalent: "")
+        // Explicit targets so `validateMenuItem` below is consulted, instead of
+        // relying on this detached menu finding us through the responder chain.
+        statusBarMenu.items.forEach { $0.target = self }
 
         // Set the status bar icon and action
         if let button = statusBarItem.button {
@@ -62,7 +82,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // opens with a sit. AutoStand's first notification will correct
             // this if needed.
             let initialPhase: AutoStand.Phase = Preferences.shared.automaticStandEnabled
-                ? (DeskController.shared?.autoStand.currentPhase ?? .sitting)
+                ? (AutoStand.shared.currentPhase)
                 : .disabled
             applyStatusBarIcon(phase: initialPhase)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -92,6 +112,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             popover.contentViewController = mainViewController
         }
 
+        // Bring Bluetooth up only once the view controller has registered its
+        // state handler, so the very first state change can't be missed.
+        BluetoothManager.shared.start()
+
+        // The schedule is independent of the desk connection, so start it here
+        // rather than waiting for a desk to turn up.
+        AutoStand.shared.update()
+
         eventMonitor = EventMonitor(mask: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             MainActor.assumeIsolated {
                 if let self = self, self.popover.isShown {
@@ -115,6 +143,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         viewController?.controller?.moveToPosition(.stand)
     }
 
+    @objc func reconnectDesk() {
+        BluetoothManager.shared.retryNow()
+    }
+
+    @objc func forgetDesk() {
+        BluetoothManager.shared.forgetDesk()
+    }
+
     // MARK: - Menubar icon
 
     /// Compatibility shim for the Preferences checkbox path: pulls the current
@@ -125,7 +161,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if !Preferences.shared.automaticStandEnabled {
             phase = .disabled
         } else {
-            phase = DeskController.shared?.autoStand.currentPhase ?? .sitting
+            phase = AutoStand.shared.currentPhase
         }
         applyStatusBarIcon(phase: phase)
     }
@@ -142,7 +178,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if !Preferences.shared.automaticStandEnabled {
             phase = .disabled
         } else {
-            phase = DeskController.shared?.autoStand.currentPhase ?? .sitting
+            phase = AutoStand.shared.currentPhase
         }
         applyStatusBarIcon(phase: phase)
     }
@@ -267,6 +303,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+}
+
+extension AppDelegate: NSMenuItemValidation {
+
+    /// Grey out what can't work right now, so the menu tells the truth about
+    /// the connection instead of silently doing nothing.
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        switch menuItem.action {
+        case #selector(moveToSit), #selector(moveToStand):
+            return BluetoothManager.shared.state == .ready
+        case #selector(reconnectDesk):
+            return BluetoothManager.shared.state != .ready
+        case #selector(forgetDesk):
+            return BluetoothManager.shared.hasRememberedDesk
+        default:
+            return true
+        }
+    }
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {

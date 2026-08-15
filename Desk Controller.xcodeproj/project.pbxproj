@@ -28,8 +28,9 @@
 		7DA9470025AD3462000B4816 /* MoveDeskCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA946FF25AD3462000B4816 /* MoveDeskCommand.swift */; };
 		81293EBE25F24047007D3663 /* AutoStand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81293EBD25F24047007D3663 /* AutoStand.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F3 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* NotificationManager.swift */; };
-		F1B2C3D4E5F6A7B8C9D0E1F3 /* AboutWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1B2C3D4E5F6A7B8C9D0E1F2 /* AboutWindowController.swift */; };
 		D2B2C3D4E5F6A7B8C9D0E1F3 /* DebugLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2B2C3D4E5F6A7B8C9D0E1F2 /* DebugLog.swift */; };
+		F1B2C3D4E5F6A7B8C9D0E1F3 /* AboutWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1B2C3D4E5F6A7B8C9D0E1F2 /* AboutWindowController.swift */; };
+		BB0000000000000000000002 /* DeskLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000000000000000000001 /* DeskLogicTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -59,9 +60,21 @@
 		7DA9470A25AD9C93000B4816 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		81293EBD25F24047007D3663 /* AutoStand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoStand.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
-		F1B2C3D4E5F6A7B8C9D0E1F2 /* AboutWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindowController.swift; sourceTree = "<group>"; };
 		D2B2C3D4E5F6A7B8C9D0E1F2 /* DebugLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLog.swift; sourceTree = "<group>"; };
+		F1B2C3D4E5F6A7B8C9D0E1F2 /* AboutWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindowController.swift; sourceTree = "<group>"; };
+		BB0000000000000000000001 /* DeskLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskLogicTests.swift; sourceTree = "<group>"; };
+		BB0000000000000000000003 /* Desk ControllerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Desk ControllerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXContainerItemProxy section */
+		BB000000000000000000000D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7D93E27C25AAB38B00F37364 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7D93E28325AAB38B00F37364;
+			remoteInfo = "Desk Controller";
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		7D93E28125AAB38B00F37364 /* Frameworks */ = {
@@ -71,6 +84,13 @@
 				7D8B1CC425AC2DD000ED1970 /* LaunchAtLogin in Frameworks */,
 				7D81874B25AC13AF0076DC19 /* Cocoa.framework in Frameworks */,
 				7D81874F25AC13BD0076DC19 /* CoreBluetooth.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB0000000000000000000007 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +132,7 @@
 				7DA9470A25AD9C93000B4816 /* .gitignore */,
 				7DA9470825AD8F9A000B4816 /* README.md */,
 				7D93E28625AAB38B00F37364 /* Desk Controller */,
+				BB0000000000000000000004 /* Desk ControllerTests */,
 				7D93E28525AAB38B00F37364 /* Products */,
 				7D81874925AC13AF0076DC19 /* Frameworks */,
 			);
@@ -121,6 +142,7 @@
 			isa = PBXGroup;
 			children = (
 				7D93E28425AAB38B00F37364 /* Desk Controller.app */,
+				BB0000000000000000000003 /* Desk ControllerTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -159,6 +181,14 @@
 			path = "AppleScript Commands";
 			sourceTree = "<group>";
 		};
+		BB0000000000000000000004 /* Desk ControllerTests */ = {
+			isa = PBXGroup;
+			children = (
+				BB0000000000000000000001 /* DeskLogicTests.swift */,
+			);
+			path = "Desk ControllerTests";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -182,6 +212,24 @@
 			productReference = 7D93E28425AAB38B00F37364 /* Desk Controller.app */;
 			productType = "com.apple.product-type.application";
 		};
+		BB0000000000000000000005 /* Desk ControllerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB0000000000000000000009 /* Build configuration list for PBXNativeTarget "Desk ControllerTests" */;
+			buildPhases = (
+				BB0000000000000000000006 /* Sources */,
+				BB0000000000000000000007 /* Frameworks */,
+				BB0000000000000000000008 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BB000000000000000000000C /* PBXTargetDependency */,
+			);
+			name = "Desk ControllerTests";
+			productName = "Desk ControllerTests";
+			productReference = BB0000000000000000000003 /* Desk ControllerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -194,6 +242,9 @@
 				TargetAttributes = {
 					7D93E28325AAB38B00F37364 = {
 						CreatedOnToolsVersion = 12.3;
+					};
+					BB0000000000000000000005 = {
+						TestTargetID = 7D93E28325AAB38B00F37364;
 					};
 				};
 			};
@@ -214,6 +265,7 @@
 			projectRoot = "";
 			targets = (
 				7D93E28325AAB38B00F37364 /* Desk Controller */,
+				BB0000000000000000000005 /* Desk ControllerTests */,
 			);
 		};
 /* End PBXProject section */
@@ -227,6 +279,13 @@
 				7D93E28C25AAB38D00F37364 /* Assets.xcassets in Resources */,
 				7DA946FD25AD32BB000B4816 /* deskcontroller.sdef in Resources */,
 				7D93E28F25AAB38D00F37364 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB0000000000000000000008 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -256,7 +315,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BB0000000000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000000000000000000002 /* DeskLogicTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BB000000000000000000000C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7D93E28325AAB38B00F37364 /* Desk Controller */;
+			targetProxy = BB000000000000000000000D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		7D93E28D25AAB38D00F37364 /* Main.storyboard */ = {
@@ -399,11 +474,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Desk Controller/Desk_Controller.entitlements";
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 14;
 				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = HC689Z8JM4;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
@@ -416,6 +492,7 @@
 				MARKETING_VERSION = 2.1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.davidwilliames.Desk-Controller";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 6;
 			};
 			name = Debug;
@@ -426,11 +503,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Desk Controller/Desk_Controller.entitlements";
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 14;
 				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = HC689Z8JM4;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
@@ -443,7 +521,42 @@
 				MARKETING_VERSION = 2.1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.davidwilliames.Desk-Controller";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 6;
+			};
+			name = Release;
+		};
+		BB000000000000000000000A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CURRENT_PROJECT_VERSION = 14;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 2.1.5;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.davidwilliames.Desk-ControllerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Desk Controller.app/Contents/MacOS/Desk Controller";
+			};
+			name = Debug;
+		};
+		BB000000000000000000000B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CURRENT_PROJECT_VERSION = 14;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 2.1.5;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.davidwilliames.Desk-ControllerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Desk Controller.app/Contents/MacOS/Desk Controller";
 			};
 			name = Release;
 		};
@@ -464,6 +577,15 @@
 			buildConfigurations = (
 				7D93E29525AAB38D00F37364 /* Debug */,
 				7D93E29625AAB38D00F37364 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB0000000000000000000009 /* Build configuration list for PBXNativeTarget "Desk ControllerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB000000000000000000000A /* Debug */,
+				BB000000000000000000000B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

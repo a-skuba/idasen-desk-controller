@@ -50,21 +50,24 @@ class ViewController: NSViewController {
     }
 
     func setup() {
-
-        bluetoothManager.onConnectedPeripheralChange = { [weak self] peripheral in
-            self?.updateConnectionLabels()
-
-            guard let peripheral = peripheral else {
-                return
-            }
-
-            self?.setControllerFor(deskPeripheral: peripheral)
+        bluetoothManager.onStateChange = { [weak self] state in
+            self?.deskConnectionStateChanged(state)
         }
+    }
 
-        bluetoothManager.onCentralManagerStateChange = { [weak self] _ in
-            self?.controller?.autoStand.unschedule()
-            self?.updateConnectionLabels()
+    /// Build a controller once a desk is prepared and usable, and drop it the
+    /// moment the desk goes away — otherwise auto-stand and AppleScript keep
+    /// writing into a peripheral that no longer exists while the UI says
+    /// "Not connected".
+    private func deskConnectionStateChanged(_ state: BluetoothManager.State) {
+        if state == .ready, let desk = bluetoothManager.desk {
+            setControllerFor(desk: desk)
+        } else if controller != nil {
+            controller?.teardown()
+            controller = nil
         }
+        updateConnectionLabels()
+        refreshCountdown()
     }
 
     override func viewWillAppear() {
@@ -126,12 +129,12 @@ class ViewController: NSViewController {
 
     private func refreshCountdown() {
         guard let label = countdownLabel else { return }
-        guard Preferences.shared.automaticStandEnabled,
-              let autoStand = controller?.autoStand else {
+        guard Preferences.shared.automaticStandEnabled else {
             label.stringValue = ""
             label.isHidden = true
             return
         }
+        let autoStand = AutoStand.shared
         let phase = autoStand.currentPhase
         guard phase != .disabled else {
             label.stringValue = ""
@@ -660,62 +663,91 @@ class ViewController: NSViewController {
         }
     }
 
-    func updateConnectionLabels() {
-        let isConnected = bluetoothManager.connectedPeripheral?.state == .connected
+    /// How a connection state reads to the user: headline, device line, dot
+    /// colour, and the longer explanation shown in place of the controls.
+    private struct StatusPresentation {
+        let status: String
+        let detail: String
+        let colour: NSColor
+        let message: String
+    }
 
-        containerStackView?.isHidden = !isConnected
-        messageLabel?.isHidden = isConnected
+    private static let searchingHelp = "Searching for your desk…\n\nIf the desk hasn't connected to this Mac before, put it into pairing mode by holding the Bluetooth button on its controller until the light blinks.\n\nOtherwise, make sure no phone or other computer is currently connected to it."
 
-        statusLabel?.stringValue = isConnected ? "Connected" : "Not connected"
-        deviceNameLabel?.stringValue = bluetoothManager.connectedPeripheral?.name ?? ""
-        statusIndicator?.layer?.backgroundColor = NSColor.red.cgColor
+    private func presentation(for state: BluetoothManager.State) -> StatusPresentation {
+        let name = bluetoothManager.deskName ?? ""
 
-        if let centralManager = bluetoothManager.centralManager, let statusLabel = statusLabel {
-
-            switch centralManager.state {
+        switch state {
+        case .ready:
+            return StatusPresentation(status: "Connected", detail: name, colour: .systemGreen, message: "")
+        case .preparing:
+            // Connected but not yet usable. Reporting this honestly matters:
+            // showing "Connected" here is what made the buttons look broken.
+            return StatusPresentation(status: "Getting ready…", detail: name,
+                                      colour: .systemOrange, message: "Reading the desk's height…")
+        case .connecting:
+            return StatusPresentation(status: "Connecting…", detail: name,
+                                      colour: .systemOrange, message: ViewController.searchingHelp)
+        case .searching:
+            return StatusPresentation(status: "Searching for your desk", detail: "",
+                                      colour: .systemOrange, message: ViewController.searchingHelp)
+        case .unavailable(let managerState):
+            switch managerState {
             case .poweredOff:
-                statusLabel.stringValue = "Turning bluetooth on"
-            case .poweredOn:
-                statusLabel.stringValue = isConnected ? "Connected" : "Not connected"
-                messageLabel?.stringValue = "Searching for your Desk... \n\nIf the desk hasn't connected to this Mac before, make sure to set it into pairing mode. \n\nOtherwise, make sure no other apps are currently connected to it."
-
-                statusIndicator?.layer?.backgroundColor = isConnected ? NSColor.green.cgColor : NSColor.orange.cgColor
-
-                if !isConnected {
-                    deviceNameLabel?.stringValue = "Searching for nearby desks"
-                }
-            case .resetting:
-                statusLabel.stringValue = "Reconnecting"
-                statusIndicator?.layer?.backgroundColor = NSColor.orange.cgColor
+                return StatusPresentation(status: "Bluetooth is off", detail: "", colour: .systemRed,
+                                          message: "Turn Bluetooth on and Desk Controller will reconnect to your desk on its own.")
             case .unauthorized:
-                statusLabel.stringValue = "Unauthorized"
-            case .unknown:
-                statusLabel.stringValue = "Unknown status"
+                return StatusPresentation(status: "Bluetooth access denied", detail: "", colour: .systemRed,
+                                          message: "Desk Controller can't reach your desk without Bluetooth. Grant access in System Settings › Privacy & Security › Bluetooth, then reopen the app.")
             case .unsupported:
-                statusLabel.stringValue = "Bluetooth not supported"
-            @unknown default:
-                break
-            }
-
-            if centralManager.authorization == .denied {
-                statusLabel.stringValue = "Bluetooth access was denied"
-
-                messageLabel?.stringValue = "Bluetooth access was denied, but is vital for this application. To re-prompt the permission; delete and re-install this mac application."
+                return StatusPresentation(status: "Bluetooth not supported", detail: "", colour: .systemRed,
+                                          message: "This Mac can't use Bluetooth Low Energy, which the desk requires.")
+            case .resetting:
+                return StatusPresentation(status: "Bluetooth is restarting", detail: "", colour: .systemOrange,
+                                          message: "Reconnecting as soon as Bluetooth is back.")
+            default:
+                return StatusPresentation(status: "Starting up…", detail: "", colour: .systemOrange, message: "")
             }
         }
     }
 
-    func setControllerFor(deskPeripheral: CBPeripheral) {
-        // Tear down the previous controller first so its AutoStand timers and
-        // wake observer don't leak or keep firing against the new controller.
-        controller?.teardown()
+    func updateConnectionLabels() {
+        // "Connected" is not the same as "usable" — the desk only becomes
+        // controllable once its characteristics are discovered, so the controls
+        // key off `.ready` rather than the raw link state.
+        let isReady = bluetoothManager.state == .ready
+        var shown = presentation(for: bluetoothManager.state)
 
-        let desk = DeskPeripheral(peripheral: deskPeripheral)
+        // Authorization can already be denied while the central still reports
+        // `.unknown`, so let it override whatever the state says.
+        if bluetoothManager.centralManager?.authorization == .denied {
+            shown = presentation(for: .unavailable(.unauthorized))
+        }
+
+        containerStackView?.isHidden = !isReady
+        messageLabel?.isHidden = isReady
+
+        statusLabel?.stringValue = shown.status
+        deviceNameLabel?.stringValue = shown.detail
+        messageLabel?.stringValue = shown.message
+        statusIndicator?.layer?.backgroundColor = shown.colour.cgColor
+    }
+
+    func setControllerFor(desk: DeskPeripheral) {
+        // Tear down the previous controller first so its move timer doesn't
+        // leak or keep firing against the new controller.
+        controller?.teardown()
 
         controller = DeskController(desk: desk)
         controller?.onPositionChange({ [weak self] deskPosition in
             self?.onDeskPositionChange(deskPosition)
         })
+
+        // Preferences shows the live height and calibrates against it; if its
+        // window is already open, repoint it at the controller we just built.
+        if PreferencesWindowController.sharedInstance.isWindowLoaded {
+            PreferencesWindowController.sharedInstance.deskController = controller
+        }
 
         controller?.onDoubleTapDetected = { [weak self] direction in
             guard Preferences.shared.doubleTapToSitStand else {
@@ -755,16 +787,15 @@ class ViewController: NSViewController {
         standButton?.isEnabled = abs((Preferences.shared.standingPosition - Preferences.shared.positionOffset) - newPosition) > 0.5
     }
 
+    /// Called when the popover opens. Opening it is the user saying "connect
+    /// already", so give the connection a real kick rather than the no-op the
+    /// old `startScanning()` call amounted to once the central existed.
     func reconnect() {
-
-        if bluetoothManager.connectedPeripheral == nil {
-            bluetoothManager.startScanning()
-        }
+        bluetoothManager.retryNow()
 
         if let position = controller?.desk.position {
             onDeskPositionChange(position)
         }
-
     }
 
     @IBAction func moveUpClicked(_ sender: TouchButton) {

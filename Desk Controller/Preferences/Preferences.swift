@@ -17,6 +17,14 @@ class Preferences {
 
     static let shared = Preferences()
 
+    /// Where preferences are stored. Injectable so tests can run against a
+    /// throwaway suite instead of the user's real settings.
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
     private let standingKey = "standingPositionValue"
     private let sittingKey = "sittingPositionValue"
 
@@ -40,20 +48,20 @@ class Preferences {
     private let notifyInsteadOfAutoMoveKey = "notifyInsteadOfAutoMove"
 
     var standingPosition: Float {
-        get { UserDefaults.standard.object(forKey: standingKey) as? Float ?? 110 }
-        set { UserDefaults.standard.set(newValue, forKey: standingKey) }
+        get { defaults.object(forKey: standingKey) as? Float ?? 110 }
+        set { defaults.set(newValue, forKey: standingKey) }
     }
 
     var sittingPosition: Float {
-        get { UserDefaults.standard.object(forKey: sittingKey) as? Float ?? 70 }
-        set { UserDefaults.standard.set(newValue, forKey: sittingKey) }
+        get { defaults.object(forKey: sittingKey) as? Float ?? 70 }
+        set { defaults.set(newValue, forKey: sittingKey) }
     }
 
     var automaticStandPerHour: TimeInterval {
-        get { UserDefaults.standard.object(forKey: automaticStandKey) as? TimeInterval ?? 10 * 60 }
+        get { defaults.object(forKey: automaticStandKey) as? TimeInterval ?? 10 * 60 }
         set {
-            UserDefaults.standard.set(newValue, forKey: automaticStandKey)
-            DeskController.shared?.autoStand.update()
+            defaults.set(newValue, forKey: automaticStandKey)
+            AutoStand.shared.update()
         }
     }
 
@@ -62,7 +70,7 @@ class Preferences {
     /// that the old (`standFor + standEvery == 60`) cycle is preserved.
     var standEveryMinutes: Int {
         get {
-            if let v = UserDefaults.standard.object(forKey: standEveryKey) as? Int {
+            if let v = defaults.object(forKey: standEveryKey) as? Int {
                 return v
             }
             // Migrate from old `automaticStandPerHour`: assume 60-min cycle.
@@ -70,8 +78,8 @@ class Preferences {
             return max(1, 60 - oldStandMin)
         }
         set {
-            UserDefaults.standard.set(max(1, newValue), forKey: standEveryKey)
-            DeskController.shared?.autoStand.update()
+            defaults.set(max(1, newValue), forKey: standEveryKey)
+            AutoStand.shared.update()
         }
     }
 
@@ -82,7 +90,7 @@ class Preferences {
     var standForMinutes: Int {
         get {
             let stored: Int
-            if let v = UserDefaults.standard.object(forKey: standForKey) as? Int {
+            if let v = defaults.object(forKey: standForKey) as? Int {
                 stored = v
             } else {
                 // Migrate from old `automaticStandPerHour`.
@@ -91,32 +99,32 @@ class Preferences {
             return max(5, stored)
         }
         set {
-            UserDefaults.standard.set(max(5, newValue), forKey: standForKey)
-            DeskController.shared?.autoStand.update()
+            defaults.set(max(5, newValue), forKey: standForKey)
+            AutoStand.shared.update()
         }
     }
 
     var automaticStandInactivity: TimeInterval {
-        get { UserDefaults.standard.object(forKey: automaticStandInactivityKey) as? TimeInterval ?? 5 * 60 }
-        set { UserDefaults.standard.set(newValue, forKey: automaticStandInactivityKey) }
+        get { defaults.object(forKey: automaticStandInactivityKey) as? TimeInterval ?? 5 * 60 }
+        set { defaults.set(newValue, forKey: automaticStandInactivityKey) }
     }
 
     var automaticStandEnabled: Bool {
-        get { UserDefaults.standard.object(forKey: automaticStandEnabledKey) as? Bool ?? false }
+        get { defaults.object(forKey: automaticStandEnabledKey) as? Bool ?? false }
         set {
-            UserDefaults.standard.set(newValue, forKey: automaticStandEnabledKey)
-            DeskController.shared?.autoStand.update()
+            defaults.set(newValue, forKey: automaticStandEnabledKey)
+            AutoStand.shared.update()
         }
     }
 
     var positionOffset: Float {
-        get { UserDefaults.standard.object(forKey: offsetKey) as? Float ?? 0 }
-        set { UserDefaults.standard.set(newValue, forKey: offsetKey) }
+        get { defaults.object(forKey: offsetKey) as? Float ?? 0 }
+        set { defaults.set(newValue, forKey: offsetKey) }
     }
 
     var isMetric: Bool {
-        get { UserDefaults.standard.object(forKey: isMetricKey) as? Bool ?? (Locale.current.measurementSystem == .metric) }
-        set { UserDefaults.standard.set(newValue, forKey: isMetricKey) }
+        get { defaults.object(forKey: isMetricKey) as? Bool ?? (Locale.current.measurementSystem == .metric) }
+        set { defaults.set(newValue, forKey: isMetricKey) }
     }
 
     var openAtLogin: Bool {
@@ -125,34 +133,41 @@ class Preferences {
     }
 
     var doubleTapToSitStand: Bool {
-        get { UserDefaults.standard.bool(forKey: doubleTapToSitStandKey) }
-        set { UserDefaults.standard.setValue(newValue, forKey: doubleTapToSitStandKey) }
+        get { defaults.bool(forKey: doubleTapToSitStandKey) }
+        set { defaults.setValue(newValue, forKey: doubleTapToSitStandKey) }
     }
 
     var isFirstLaunch: Bool {
-        get { !(UserDefaults.standard.object(forKey: hasLaunched) as? Bool ?? false) }
-        set { UserDefaults.standard.set(!newValue, forKey: hasLaunched) }
+        get { !(defaults.object(forKey: hasLaunched) as? Bool ?? false) }
+        set { defaults.set(!newValue, forKey: hasLaunched) }
     }
 
     /// When `automaticStandEnabled` is on, post a user notification at the scheduled
     /// time instead of physically moving the desk. Off by default for backward compat.
     var notifyInsteadOfAutoMove: Bool {
-        get { UserDefaults.standard.object(forKey: notifyInsteadOfAutoMoveKey) as? Bool ?? false }
+        get { defaults.object(forKey: notifyInsteadOfAutoMoveKey) as? Bool ?? false }
         set {
-            UserDefaults.standard.set(newValue, forKey: notifyInsteadOfAutoMoveKey)
-            DeskController.shared?.autoStand.update()
+            defaults.set(newValue, forKey: notifyInsteadOfAutoMoveKey)
+            AutoStand.shared.update()
         }
     }
 
+    /// The raw (uncalibrated) height the desk should travel to.
+    ///
+    /// Clamped to the desk's physical travel: a target it can never report
+    /// reaching — a mistyped preset, `move "500cm"` from AppleScript — otherwise
+    /// leaves the move loop chasing it until the desk stalls against its limit.
     func forPosition(_ position: Position) -> Float {
+        let target: Float
         switch position {
         case .sit:
-            return sittingPosition - positionOffset
+            target = sittingPosition - positionOffset
         case .stand:
-            return standingPosition - positionOffset
+            target = standingPosition - positionOffset
         case .custom(let height):
-            return height - positionOffset
+            target = height - positionOffset
         }
+        return min(max(target, DeskPeripheral.minPosition), DeskPeripheral.maxPosition)
     }
 
     /// Parse a height string — "120cm", "60in", or a bare number interpreted in

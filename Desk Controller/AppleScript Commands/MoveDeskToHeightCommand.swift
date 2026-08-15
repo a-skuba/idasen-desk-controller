@@ -11,17 +11,12 @@ import Foundation
 class MoveDeskToHeightCommand: NSScriptCommand {
 
     override func performDefaultImplementation() -> Any? {
-
         guard let parameter = directParameter as? String else {
+            reportMissingParameter()
             return nil
         }
 
-        MainActor.assumeIsolated {
-            if let height = Preferences.shared.parseHeightToCentimeters(parameter) {
-                DeskController.shared?.moveToHeight(height)
-            }
-        }
-
+        report(MainActor.assumeIsolated { DeskScripting.moveToHeight(parameter) })
         return nil
     }
 }
