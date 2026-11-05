@@ -55,6 +55,8 @@ class ViewController: NSViewController {
             self?.updateConnectionLabels()
 
             guard let peripheral = peripheral else {
+                // Link dropped: stop hold/auto-stand timers writing to a dead peripheral.
+                self?.controller?.tearDown()
                 return
             }
 
@@ -708,6 +710,7 @@ class ViewController: NSViewController {
     func setControllerFor(deskPeripheral: CBPeripheral) {
         let desk = DeskPeripheral(peripheral: deskPeripheral)
 
+        controller?.tearDown()
         controller = DeskController(desk: desk)
         controller?.onPositionChange({ [weak self] deskPosition in
             self?.onDeskPositionChange(deskPosition)
