@@ -756,9 +756,8 @@ class ViewController: NSViewController {
 
     func reconnect() {
 
-        if bluetoothManager.connectedPeripheral == nil {
-            bluetoothManager.startScanning()
-        }
+        // Idempotent: no-op when connected or a connect is already pending.
+        bluetoothManager.startScanning()
 
         if let position = controller?.desk.position {
             onDeskPositionChange(position)
