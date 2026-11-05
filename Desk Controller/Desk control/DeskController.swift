@@ -68,13 +68,16 @@ class DeskController: NSObject {
         DeskController.shared = self
 
         autoStand.update()
-        NSWorkspace.shared.notificationCenter.addObserver(
-                self, selector: #selector(onWakeNote(note:)),
-                name: NSWorkspace.didWakeNotification, object: nil)
+        // Wake → reconnect is handled once in BluetoothManager. Registering it
+        // here leaked one observer per (re)connection.
     }
 
-    @objc func onWakeNote(note: NSNotification) {
-        BluetoothManager.shared.reconnect()
+    /// Called before this controller is replaced by a new one after a
+    /// reconnect, so stale timers don't keep firing against a dead peripheral.
+    func tearDown() {
+        stopHoldTimer()
+        movingToPosition = nil
+        autoStand.unschedule()
     }
 
 
